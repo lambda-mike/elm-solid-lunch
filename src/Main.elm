@@ -1,27 +1,33 @@
-port module Main exposing (main)
+module Main exposing (main)
 
 import Browser
-import Debug
-import Html exposing (Html, a, button, dl, dt, dd, div, input, label, li, p, span, text, ul)
+import Html exposing (Html, a, button, dd, div, dl, dt, input, label, li, p, span, text, ul)
 import Html.Attributes exposing (for, href, id, style, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Json.Decode as D exposing (Decoder)
 import Json.Encode as E
 import Ports
 
-type alias WebId = String
 
-type alias FullName = String
+type alias WebId =
+    String
+
+
+type alias FullName =
+    String
+
 
 type alias FriendData =
-    { name  : FullName
+    { name : FullName
     , webId : WebId
     }
 
+
 type alias Profile =
     { fullName : FullName
-    , friends  : List FriendData
+    , friends : List FriendData
     }
+
 
 type alias Data =
     { webId : WebId
@@ -29,9 +35,11 @@ type alias Data =
     , profile : Maybe Profile
     }
 
-type Model 
+
+type Model
     = Anonymous
     | LoggedIn Data
+
 
 type Msg
     = NoOp
@@ -43,31 +51,42 @@ type Msg
     | UpdateProfileInput String
     | ChooseFriend WebId
 
-init : () -> (Model, Cmd Msg)
-init flags = (Anonymous, Cmd.none)
+
+init : () -> ( Model, Cmd Msg )
+init flags =
+    ( Anonymous, Cmd.none )
+
 
 view : Model -> Html Msg
-view model = 
+view model =
     case model of
         Anonymous ->
-            div [] 
+            div []
                 [ p [] [ text "You are not logged in." ]
                 , button [ onClick AuthRequest ] [ text "Log in" ]
                 ]
+
         LoggedIn data ->
-            div [] 
+            div []
                 [ p [] [ text "You are logged in as:" ]
                 , p [] [ span [] [ text data.webId ] ]
                 , button [ onClick LogOut ] [ text "Log out" ]
                 , p []
                     [ label [ for "profile" ] [ text "Profile: " ]
-                    , input 
+                    , input
                         [ id "profile"
                         , type_ "text"
                         , style "width" "25em"
-                        , value (if data.profileInput == "" then data.webId else data.profileInput)
+                        , value
+                            (if data.profileInput == "" then
+                                data.webId
+
+                             else
+                                data.profileInput
+                            )
                         , onInput UpdateProfileInput
-                        ] [ ]
+                        ]
+                        []
                     , button [ onClick <| FetchProfile data.profileInput ] [ text "View" ]
                     ]
                 , dl []
@@ -78,94 +97,113 @@ view model =
                         [ case data.profile of
                             Just p ->
                                 ul [] <| List.map displayFriend p.friends
-                            _ -> 
+
+                            _ ->
                                 text ""
                         ]
                     ]
                 ]
 
+
 displayFriend : FriendData -> Html Msg
 displayFriend friend =
-    li [] 
-        [ a 
+    li []
+        [ a
             [ href "#"
-            , onClick (ChooseFriend friend.webId) 
-            ] 
+            , onClick (ChooseFriend friend.webId)
+            ]
             [ text <|
-                if friend.name /= "" then 
-                    friend.name 
+                if friend.name /= "" then
+                    friend.name
+
                 else
                     friend.webId
-            ] 
+            ]
         ]
 
-update : Msg -> Model -> (Model, Cmd Msg)
-update msg model = 
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
     case msg of
         NoOp ->
-            let 
-                _ = 
-                    Debug.log "msg: NoOp, model:" model
-            in
-            (model, Cmd.none)
+            ( model, Cmd.none )
+
         AuthRequest ->
             if model == Anonymous then
-                (model, Ports.authRequest ())
+                ( model, Ports.authRequest () )
+
             else
-                (model, Cmd.none)
+                ( model, Cmd.none )
+
         LogOut ->
             if model /= Anonymous then
-                (Anonymous, Ports.logout ())
+                ( Anonymous, Ports.logout () )
+
             else
-                (model, Cmd.none)
+                ( model, Cmd.none )
+
         LogIn webId ->
             if model == Anonymous then
-                (LoggedIn (Data webId webId Nothing), Ports.fetchProfile webId)
+                ( LoggedIn (Data webId webId Nothing), Ports.fetchProfile webId )
+
             else
-                (model, Cmd.none)
+                ( model, Cmd.none )
+
         FetchProfile webId ->
             case model of
                 LoggedIn data ->
-                    (LoggedIn { data | profile = Nothing }, Ports.fetchProfile webId)
-                _ -> 
-                    (model, Cmd.none)
+                    ( LoggedIn { data | profile = Nothing }, Ports.fetchProfile webId )
+
+                _ ->
+                    ( model, Cmd.none )
+
         LoadProfile data ->
-            (setProfile model data, Cmd.none)
+            ( setProfile model data, Cmd.none )
+
         UpdateProfileInput profile ->
-            (setModelProfileInput model profile, Cmd.none)
+            ( setModelProfileInput model profile, Cmd.none )
+
         ChooseFriend webId ->
             case model of
                 LoggedIn data ->
-                    (LoggedIn 
-                        { data 
-                        | profileInput = webId
-                        , profile = Nothing
+                    ( LoggedIn
+                        { data
+                            | profileInput = webId
+                            , profile = Nothing
                         }
-                        , Ports.fetchProfile webId)
-                _ -> 
-                    (model, Cmd.none)
+                    , Ports.fetchProfile webId
+                    )
 
+                _ ->
+                    ( model, Cmd.none )
 
 
 setProfile : Model -> Profile -> Model
 setProfile model profile =
     case model of
-        Anonymous -> model
+        Anonymous ->
+            model
+
         LoggedIn data ->
             LoggedIn { data | profile = Just profile }
+
 
 setModelProfileInput : Model -> String -> Model
 setModelProfileInput model profile =
     case model of
-        Anonymous -> model
+        Anonymous ->
+            model
+
         LoggedIn data ->
             LoggedIn { data | profileInput = profile }
+
 
 sessionSubscriptionHandler : D.Value -> Msg
 sessionSubscriptionHandler =
     D.decodeValue D.string
-    >> Result.map LogIn
-    >> Result.withDefault LogOut
+        >> Result.map LogIn
+        >> Result.withDefault LogOut
+
 
 profileDecoder : Decoder Profile
 profileDecoder =
@@ -175,22 +213,25 @@ profileDecoder =
                 (D.field "name" D.string)
                 (D.field "webId" D.string)
     in
-        D.map2 Profile
-            (D.field "fullName" D.string)
-            (D.field "friends" (D.list friendDecoder))
+    D.map2 Profile
+        (D.field "fullName" D.string)
+        (D.field "friends" (D.list friendDecoder))
+
 
 loadProfileHandler : D.Value -> Msg
 loadProfileHandler =
     D.decodeValue profileDecoder
-    >> Result.map LoadProfile
-    >> Result.withDefault NoOp
+        >> Result.map LoadProfile
+        >> Result.withDefault NoOp
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-    [ Ports.trackSession sessionSubscriptionHandler
-    , Ports.loadProfile loadProfileHandler
-    ]
+        [ Ports.trackSession sessionSubscriptionHandler
+        , Ports.loadProfile loadProfileHandler
+        ]
+
 
 main : Program () Model Msg
 main =

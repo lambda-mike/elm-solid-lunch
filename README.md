@@ -4,15 +4,14 @@ Rewrite of solid app lunch time [tutorial](https://solid.inrupt.com/docs/app-on-
 
 ## Prerequisites
 
-[Install](https://guide.elm-lang.org/install.html) Elm.
-
+`yarn`
 
 ## Build
 
-`elm make src/Main.elm --output=scripts/main.js`
+`yarn build`
 
 ## Run
 
-`elm reactor`
+`yarn dev`
 
-Go to index.html
+Go to [localhost:8080](http://localhost:8080)
